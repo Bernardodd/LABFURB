@@ -1,0 +1,84 @@
+---
+title: "Expectativa de Vida ao Nascer (anos)" 
+author: "Dalton da Silva e Bernardo Dandolini" 
+format: html 
+editor: visual 
+---
+
+## **Introdução**
+
+Nesta análise, exploramos a variável "Expectativa de Vida ao Nascer (anos)" utilizando dados do Banco Mundial. O objetivo é visualizar como essa variável se comporta ao longo do tempo em diferentes países, destacando tendências globais de saúde e desenvolvimento humano.
+
+```{r}
+#| include: false
+## Carregando as Bibliotecas
+library(WDI)
+library(dplyr)
+library(ggplot2)
+library(viridis)
+library(gganimate)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(transformr)
+library(stringr)
+```
+
+## **Contextualização da Variável**
+
+A **expectativa de vida ao nascer** representa o número médio de anos que um recém-nascido pode esperar viver, se os padrões atuais de mortalidade permanecerem constantes ao longo de sua vida. Este indicador é amplamente utilizado como uma medida geral da saúde e bem-estar de uma população.
+
+Melhorias na expectativa de vida estão diretamente relacionadas ao acesso à saúde, saneamento básico, alimentação adequada, educação e estabilidade social e econômica. Ao analisar sua evolução ao longo do tempo, conseguimos perceber avanços em políticas públicas e os impactos de eventos globais, como pandemias ou guerras.
+
+```{r}
+#| include: false
+# Definindo o indicador
+indicator <- c("SP.DYN.LE00.IN")
+
+# Coletando os dados do Banco Mundial
+datWM <- WDI(indicator, country = "all", start = 1970, end = 2019)
+
+# Renomeando a coluna corretamente
+colnames(datWM)[which(names(datWM) == "SP.DYN.LE00.IN")] <- "Expectativa de Vida"
+
+# Limpando os dados
+datWM_clean <- datWM %>% filter(!is.na(iso2c), !is.na(`Expectativa de Vida`))
+```
+
+## **Mapa Mundial Animado**
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+# Mapa base
+world <- ne_countries(returnclass = "sf") %>% 
+  select(iso_a2, name, geometry)
+
+# Junção com dados
+world_data <- left_join(world, datWM_clean, by = c("iso_a2" = "iso2c"))
+
+# Gerando o mapa animado
+ggplot(world_data %>% filter(!is.na(year)), 
+       aes(geometry = geometry, fill = `Expectativa de Vida`)) +
+  geom_sf() +
+  scale_fill_viridis_c(option = "plasma") +
+  labs(
+    title = "Expectativa de Vida ao Nascer em {closest_state}",
+    fill = "Anos",
+    caption = "Fonte: Banco Mundial"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", legend.key.width = unit(2.5, "cm")) +
+  transition_states(year, transition_length = 3, state_length = 1)
+```
+
+## **Conclusão**
+
+A expectativa de vida é um importante termômetro da qualidade de vida em um país. Por meio dessa análise, observamos padrões de desenvolvimento e desigualdade que refletem políticas públicas, acesso à saúde e condições de vida das populações ao redor do mundo.
+
+## **Referências**
+
+-   Banco Mundial. (2023). Dados sobre Expectativa de Vida.\
+-   ggplot2: Gráficos elegantes para análise de dados. (2023).
